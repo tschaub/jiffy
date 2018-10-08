@@ -7,11 +7,16 @@ import (
 	"fmt"
 )
 
-// Expression represents a JSON expression.
+// Expression represents a JSON Expression.  An expression can be populated by
+// calling the UnmarshalJSON method or with the json.Unmarshal function.  By default,
+// unmarshaling validates that JSON conforms to the JSON Expression grammar.  An
+// expression can be given a custom Validator function that will be called during
+// unmarshalling.  The Validator function will be called with the expression's operator
+// and arguments.
 type Expression struct {
 	Operator  string
 	Arguments []interface{}
-	Validator func(string, []interface{}) error
+	Validator func(string, []interface{}) error // called with operator and arguments
 }
 
 // Validate determines if an expression is valid.  The only built-in requirement for validation
@@ -64,7 +69,10 @@ func (expression *Expression) MarshalJSON() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-// UnmarshalJSON creates an expression from JSON.
+// UnmarshalJSON creates an expression from JSON.  If the expression has a
+// custom Validator function, this function will be called with the operator
+// and arguments during unmarshalling.  Any nested expressions will acquire
+// the same Validator function and must pass the same validation.
 func (expression *Expression) UnmarshalJSON(data []byte) error {
 	var parts []interface{}
 	if partsErr := json.Unmarshal(data, &parts); partsErr != nil {
