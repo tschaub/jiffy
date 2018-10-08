@@ -24,9 +24,9 @@ Here the `"or"` operator gets two arguments — both JSON Expressions.  The `"gt
 (greater than) gets a single argument of `10`.  The `"lt"` operator (less than) gets a single
 argument of `20`.
 
-Grammar
+### Grammar
 
-A JSON Expression is a subset of JSON with a grammar that follows these rules:
+A JSON Expression is a subset of JSON with a grammar that follows these [rules](https://en.wikipedia.org/wiki/Augmented_Backus%E2%80%93Naur_form):
 
 	expression = begin-array operator *( value-separator argument ) end-array
 
