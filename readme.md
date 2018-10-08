@@ -39,3 +39,5 @@ rules for `begin-array`, `value-separator`, `end-array`, `quotation-mark`, `char
 `true`, `object`, `number`, and `string`.
 
 See the [documentation](https://godoc.org/github.com/tschaub/jiffy) for more detail.
+
+[![Build Status](https://travis-ci.org/tschaub/jiffy.svg?branch=master)](https://travis-ci.org/tschaub/jiffy)
