@@ -7,17 +7,17 @@ elements in the array that are arrays must be JSON Expressions.
 
 The first element in a JSON Expression is the operator, and any remaining elements are
 arguments for that operator.  For example, a JSON Expression representing a logical
-expression that matches all numbers between 10 and 20 could look like this:
+expression that matches all items with a count value between 10 (inclusive) and 20 could look like this:
 
 	[
-	  "or",
-	  ["gt", 10],
-	  ["lt", 20]
+	  "all",
+	  [">=", ["get", "count"], 10],
+	  ["<", ["get", "count"], 20]
 	]
 
-Here the "or" operator gets two arguments — both JSON Expressions.  The "gt" operator
-(greater than) gets a single argument of 10.  The "lt" operator (less than) gets a single
-argument of 20.
+Here the "all" operator is passed two arguments, both JSON Expressions.  The ">=" operator
+(greater than or equal) is passed two arguments: the first is a "count" property accessor
+using the "get" operator, and the second is the literal value 10.
 
 Grammar
 

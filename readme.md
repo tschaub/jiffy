@@ -1,6 +1,8 @@
 # jiffy
 
-This [package](https://godoc.org/github.com/tschaub/jiffy) provides utilities for parsing and validating JSON Expressions.
+[![GoDoc](https://godoc.org/github.com/tschaub/jiffy?status.svg)](https://godoc.org/github.com/tschaub/jiffy)
+
+This package provides utilities for parsing and validating JSON Expressions.
 
 ## JSON Expressions
 
