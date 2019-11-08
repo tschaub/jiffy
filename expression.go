@@ -40,28 +40,22 @@ func (expression *Expression) MarshalJSON() ([]byte, error) {
 		return nil, validationErr
 	}
 
-	var buffer bytes.Buffer
+	buffer := &bytes.Buffer{}
 	buffer.WriteString(`[`)
 
-	opBytes, opErr := json.Marshal(expression.Operator)
-	if opErr != nil {
-		return nil, fmt.Errorf("failed to marshal operator \"%s\": %s", expression.Operator, opErr)
-	}
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent("", "")
 
-	_, writeErr := buffer.Write(opBytes)
-	if writeErr != nil {
-		return nil, fmt.Errorf("failed to write operator \"%s\": %s", expression.Operator, writeErr)
+	if opErr := encoder.Encode(expression.Operator); opErr != nil {
+		return nil, fmt.Errorf("failed to marshal operator \"%s\": %s", expression.Operator, opErr)
 	}
 
 	for i, argument := range expression.Arguments {
 		buffer.WriteString(`,`)
-		argBytes, argErr := json.Marshal(argument)
-		if argErr != nil {
+
+		if argErr := encoder.Encode(argument); argErr != nil {
 			return nil, fmt.Errorf("failed to marshal argument %d: %s", i, argErr)
-		}
-		_, writeErr := buffer.Write(argBytes)
-		if writeErr != nil {
-			return nil, fmt.Errorf("failed to write argument %d: %s", i, writeErr)
 		}
 	}
 

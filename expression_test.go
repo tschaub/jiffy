@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type TestCase struct {
@@ -17,12 +19,18 @@ type TestCase struct {
 
 var cases = []TestCase{
 	{
-		name: "simple expression",
+		name: "comparison expression",
 		exp: &Expression{
-			Operator:  "gt",
-			Arguments: []interface{}{"property", 42.0},
+			Operator: ">",
+			Arguments: []interface{}{
+				&Expression{
+					Operator:  "get",
+					Arguments: []interface{}{"count"},
+				},
+				42.0,
+			},
 		},
-		str: `["gt","property",42]`,
+		str: `[">", ["get", "count"], 42]`,
 	},
 
 	{
@@ -31,43 +39,43 @@ var cases = []TestCase{
 			Operator:  "in",
 			Arguments: []interface{}{"property", 42.0, 10.0, 100.0},
 		},
-		str: `["in","property",42,10,100]`,
+		str: `["in", "property", 42, 10, 100]`,
 	},
 
 	{
 		name: "bad operator type (number)",
-		str:  `[42,"oops"]`,
+		str:  `[42, "oops"]`,
 		err:  errors.New("expected a string operator, got 42"),
 	},
 
 	{
 		name: "bad operator type (boolean)",
-		str:  `[true,"oops"]`,
+		str:  `[true, "oops"]`,
 		err:  errors.New("expected a string operator, got true"),
 	},
 
 	{
 		name: "bad operator type (null)",
-		str:  `[null,"oops"]`,
+		str:  `[null, "oops"]`,
 		err:  errors.New("expected a string operator, got <nil>"),
 	},
 
 	{
 		name: "nested expression",
 		exp: &Expression{
-			Operator: "or",
+			Operator: "any",
 			Arguments: []interface{}{
 				&Expression{
-					Operator:  "gt",
+					Operator:  ">",
 					Arguments: []interface{}{"property", 42.0},
 				},
 				&Expression{
-					Operator:  "lte",
+					Operator:  "<=",
 					Arguments: []interface{}{"property", 100.0},
 				},
 			},
 		},
-		str: `["or",["gt","property",42],["lte","property",100]]`,
+		str: `["any", [">", "property", 42], ["<=", "property", 100]]`,
 	},
 
 	{
@@ -75,16 +83,16 @@ var cases = []TestCase{
 		exp: &Expression{
 			Arguments: []interface{}{"oops"},
 		},
-		err: errors.New("json: error calling MarshalJSON for type *jiffy.Expression: zero length operator name"),
+		err: errors.New("zero length operator name"),
 	},
 
 	{
 		name: "nested expression missing operator",
 		exp: &Expression{
-			Operator: "or",
+			Operator: "any",
 			Arguments: []interface{}{
 				&Expression{
-					Operator:  "gt",
+					Operator:  ">",
 					Arguments: []interface{}{"property", 42.0},
 				},
 				&Expression{
@@ -92,7 +100,7 @@ var cases = []TestCase{
 				},
 			},
 		},
-		err: errors.New("json: error calling MarshalJSON for type *jiffy.Expression: failed to marshal argument 1: json: error calling MarshalJSON for type *jiffy.Expression: zero length operator name"),
+		err: errors.New("failed to marshal argument 1: json: error calling MarshalJSON for type *jiffy.Expression: zero length operator name"),
 	},
 
 	{
@@ -101,7 +109,7 @@ var cases = []TestCase{
 			Operator:  "bool",
 			Arguments: []interface{}{true, false},
 		},
-		str: `["bool",true,false]`,
+		str: `["bool", true, false]`,
 	},
 
 	{
@@ -120,7 +128,7 @@ var cases = []TestCase{
 				map[string]interface{}{"foo": 42.0},
 			},
 		},
-		str: `["complex",{"foo":42}]`,
+		str: `["complex", {"foo": 42}]`,
 	},
 
 	{
@@ -141,7 +149,7 @@ var cases = []TestCase{
 				return nil
 			},
 		},
-		str: `["pass",42]`,
+		str: `["pass", 42]`,
 	},
 
 	{
@@ -153,35 +161,21 @@ var cases = []TestCase{
 				return errors.New("fail validator")
 			},
 		},
-		err: errors.New("json: error calling MarshalJSON for type *jiffy.Expression: fail validator"),
+		err: errors.New("fail validator"),
 	},
 }
 
 func assertMarshals(t *testing.T, tc TestCase) {
-	jsonBytes, err := json.Marshal(tc.exp)
+	jsonBytes, err := tc.exp.MarshalJSON()
 	if err != nil {
-		if tc.err == nil {
-			t.Errorf("unexpected error: %v", err)
-			return
-		}
-		if tc.err.Error() != err.Error() {
-			t.Errorf("expected error '%v' got '%v'", tc.err, err)
-		}
-		if jsonBytes != nil {
-			t.Errorf("expected nil returned in the case of an error")
-		}
+		require.NotNil(t, tc.err, "expected no error, got %v", err)
+		assert.EqualError(t, err, tc.err.Error())
+		assert.Nil(t, jsonBytes)
 		return
 	}
 
-	if tc.err != nil {
-		t.Errorf("expected error '%v' got nil", tc.err)
-		return
-	}
-
-	if string(jsonBytes) != tc.str {
-		t.Errorf("expected '%s' got '%s'", tc.str, jsonBytes)
-		return
-	}
+	require.Nil(t, tc.err, "expected error %v", tc.err)
+	assert.JSONEq(t, tc.str, string(jsonBytes))
 }
 
 func assertUnmarshals(t *testing.T, tc TestCase) {
@@ -189,37 +183,22 @@ func assertUnmarshals(t *testing.T, tc TestCase) {
 	expression := &Expression{}
 	err := json.Unmarshal(jsonBytes, expression)
 	if err != nil {
-		if tc.err == nil {
-			t.Errorf("unexpected error: %v", err)
-			return
-		}
-		if tc.err.Error() != err.Error() {
-			t.Errorf("expected error '%v' got '%v'", tc.err, err)
-		}
+		require.NotNil(t, tc.err, "expected no error, got %v", err)
+		assert.EqualError(t, err, tc.err.Error())
 		return
 	}
 
-	if tc.err != nil {
-		t.Errorf("expected error '%v' got nil", tc.err)
-		return
-	}
-
+	require.Nil(t, tc.err, "expected error %v", tc.err)
 	assertEqual(t, tc.exp, expression)
 }
 
 func assertEqual(t *testing.T, expected *Expression, actual *Expression) {
-	if expected.Operator != actual.Operator {
-		t.Errorf("operator mismatch, expected %s, got %s", expected.Operator, actual.Operator)
-	}
-	if len(expected.Arguments) != len(actual.Arguments) {
-		t.Errorf("argument length mismatch, expected %d, got %d", len(expected.Arguments), len(actual.Arguments))
-		return
-	}
+	assert.Equal(t, expected.Operator, actual.Operator, "operator mismatch")
+	require.Len(t, actual.Arguments, len(expected.Arguments))
+
 	for i, arg := range expected.Arguments {
 		got := actual.Arguments[i]
-		if !reflect.DeepEqual(arg, got) {
-			t.Errorf("argument %d mismatch, expected %#v, got %#v", i, arg, got)
-		}
+		assert.Equal(t, arg, got, "argument %d mismatch", i)
 	}
 }
 
@@ -251,17 +230,14 @@ func TestValidate(t *testing.T) {
 	}
 
 	invalidErr := invalid.Validate()
-	if invalidErr == nil {
-		t.Error("expected invalid expression not to pass validation")
-	}
+	assert.NotNil(t, invalidErr)
 
 	valid := &Expression{
 		Operator: "void",
 	}
+
 	validErr := valid.Validate()
-	if validErr != nil {
-		t.Errorf("expected valid expression to pass validation, got %s", validErr)
-	}
+	assert.Nil(t, validErr)
 }
 
 func TestCustomValidator(t *testing.T) {
@@ -332,14 +308,14 @@ func TestCustomValidatorUnmarshal(t *testing.T) {
 	}
 
 	cases := map[string]error{
-		`["void"]`: nil,
-		`["add", 42, 100]`: nil,
-		`["void", "oops"]`: errors.New("expected no arguments for void"),
-		`["add"]`: errors.New("expected some arguments"),
-		`["or", ["void"], ["add", 2, 2]]`: nil,
-		`["or", ["void"], ["oops"]]`: errors.New("arg 1 error: expected some arguments"),
+		`["void"]`:                                nil,
+		`["add", 42, 100]`:                        nil,
+		`["void", "oops"]`:                        errors.New("expected no arguments for void"),
+		`["add"]`:                                 errors.New("expected some arguments"),
+		`["or", ["void"], ["add", 2, 2]]`:         nil,
+		`["or", ["void"], ["oops"]]`:              errors.New("arg 1 error: expected some arguments"),
 		`["or", ["or", ["void"], ["add", 2, 2]]]`: nil,
-		`["or", ["or", ["void"], ["oops"]]]`: errors.New("arg 0 error: arg 1 error: expected some arguments"),
+		`["or", ["or", ["void"], ["oops"]]]`:      errors.New("arg 0 error: arg 1 error: expected some arguments"),
 	}
 
 	for str, expectedErr := range cases {
