@@ -1,6 +1,6 @@
 # jiffy
 
-[![GoDoc](https://godoc.org/github.com/tschaub/jiffy?status.svg)](https://godoc.org/github.com/tschaub/jiffy)
+[![Go Reference](https://pkg.go.dev/badge/github.com/tschaub/jiffy.svg)](https://pkg.go.dev/github.com/tschaub/jiffy)
 
 This package provides utilities for parsing and validating JSON Expressions.
 
@@ -39,6 +39,6 @@ See the [JSON grammar](https://tools.ietf.org/html/rfc8259) for a definition of 
 rules for `begin-array`, `value-separator`, `end-array`, `quotation-mark`, `char`, `false`, `null`,
 `true`, `object`, `number`, and `string`.
 
-See the [documentation](https://godoc.org/github.com/tschaub/jiffy) for more detail.
+See the [documentation](https://pkg.go.dev/github.com/tschaub/jiffy) for more detail.
 
 [![Build Status](https://travis-ci.org/tschaub/jiffy.svg?branch=master)](https://travis-ci.org/tschaub/jiffy)
