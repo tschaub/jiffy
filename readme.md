@@ -41,4 +41,4 @@ rules for `begin-array`, `value-separator`, `end-array`, `quotation-mark`, `char
 
 See the [documentation](https://pkg.go.dev/github.com/tschaub/jiffy) for more detail.
 
-[![Build Status](https://travis-ci.org/tschaub/jiffy.svg?branch=master)](https://travis-ci.org/tschaub/jiffy)
+![Build Status](https://github.com/tschaub/jiffy/actions/workflows/test.yml/badge.svg)
